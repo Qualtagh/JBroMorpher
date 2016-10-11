@@ -1,7 +1,5 @@
 package org.quinto.morph.morphology;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,23 +10,26 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.trie.PatriciaTrie;
+import org.apache.commons.lang3.tuple.Pair;
 import org.quinto.dawg.DAWGSet;
 import org.quinto.dawg.DAWGSetValuedMap;
 import org.quinto.dawg.ModifiableDAWGSet;
 import org.quinto.dawg.ModifiableDAWGSetValuedMap;
 
 public class Dictionary implements Serializable {
-  private static final long serialVersionUID = 12L;
+  private static final long serialVersionUID = 23L;
+  private static final Logger logger = Logger.getLogger( Dictionary.class.getName() );
   public Map< String, Grammeme > grammemes = new LinkedHashMap<>();
   public Map< Integer, CompressedLemma > lemmas = new LinkedHashMap<>();
   public List< SuffixParadigm > allParadigms = new ArrayList<>();
   public DAWGSetValuedMap words;
-  public DAWGSet allWords;
-  public DAWGSet inverseWords;
   public PatriciaTrie< int[] > suffixParadigms;
-  public transient PatriciaTrie< Integer > lemmasIndex;
+  public PatriciaTrie< Integer > lemmasIndex;
   public static final DAWGSet PREFIXES = new ModifiableDAWGSet( Arrays.asList(
     "авиа",
     "авто",
@@ -176,78 +177,81 @@ public class Dictionary implements Serializable {
     "этно"
   ) ).compress();
   
-  private void readObject( ObjectInputStream ois ) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-    init();
-  }
-  
   public void init() {
+    logger.log( Level.FINE, "loaded" );
     lemmasIndex = new PatriciaTrie<>();
-    for ( CompressedLemma lemma : lemmas.values() )
+    for ( CompressedLemma lemma : lemmas.values() ) {
+      lemma.dictionary = this;
       lemmasIndex.put( lemma.name + lemma.paradigmIdx, lemma.id );
-    if ( words == null ) {
-      Set< Integer > productiveParadigms = lemmas
-        .values()
+    }
+    logger.log( Level.FINE, "lemmasIndex" );
+    Set< Integer > productiveParadigms = lemmas
+      .values()
+      .stream()
+      .collect( Collectors.groupingBy( l -> l.paradigmIdx, Collectors.counting() ) )
+      .entrySet()
+      .stream()
+      .filter( e -> e.getValue() >= 3L )
+      .map( e -> e.getKey() )
+      .filter( p -> allParadigms.get( p ).isMorphablePOS() )
+      .collect( Collectors.toSet() );
+    logger.log( Level.FINE, "productiveParadigms" );
+    words = new ModifiableDAWGSetValuedMap( false );
+    for ( CompressedLemma lemma : lemmas.values() )
+      words.put( lemma.name, String.valueOf( lemma.paradigmIdx ) );
+    words = ( ( ModifiableDAWGSetValuedMap )words ).compress();
+    logger.log( Level.FINE, "words" );
+    ModifiableDAWGSetValuedMap allWordsTemp = new ModifiableDAWGSetValuedMap( false );
+    lemmas.values().stream().map( l -> Pair.of( l, l.getLemma() ) ).flatMap( l -> l.getValue().forms.values().stream().map( w -> Pair.of( w, l.getKey().paradigmIdx ) ) ).forEach( p -> allWordsTemp.put( p.getKey(), String.valueOf( p.getValue() ) ) );
+    DAWGSetValuedMap allWords = allWordsTemp.compress();
+    logger.log( Level.FINE, "allWords" );
+    ModifiableDAWGSet inverseWordsTemp = new ModifiableDAWGSet( false );
+    lemmas.values().stream().map( l -> l.getLemma() ).flatMap( l -> l.forms.values().stream() ).map( s -> Utils.reverse( s ) ).forEach( inverseWordsTemp::add );
+    DAWGSet inverseWords = inverseWordsTemp.compress();
+    logger.log( Level.FINE, "inverseWords" );
+    suffixParadigms = new PatriciaTrie<>();
+    Map< String, int[] > syncParadigms = Collections.synchronizedMap( suffixParadigms );
+    for ( int prefixLength = 1; prefixLength <= 5; prefixLength++ ) {
+      final int prefixLen = prefixLength;
+      List< String > prefixes = inverseWords
         .stream()
-        .collect( Collectors.groupingBy( l -> l.paradigmIdx, Collectors.counting() ) )
+        .filter( s -> s.length() > prefixLen )
+        .map( s -> s.substring( 0, prefixLen ) )
+        .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
         .entrySet()
         .stream()
-        .filter( e -> e.getValue() >= 3L )
+        .filter( e -> e.getValue() > 1L )
         .map( e -> e.getKey() )
-        .collect( Collectors.toSet() );
-      words = new ModifiableDAWGSetValuedMap( true );
-      for ( CompressedLemma lemma : lemmas.values() )
-        words.put( lemma.name, String.valueOf( lemma.paradigmIdx ) );
-      words = ( ( ModifiableDAWGSetValuedMap )words ).compress();
-      allWords = new ModifiableDAWGSet( false );
-      inverseWords = new ModifiableDAWGSet( false );
-      lemmas.values().stream().map( l -> l.getLemma() ).flatMap( l -> l.forms.values().stream() ).forEach( s -> {
-        allWords.add( s );
-        inverseWords.add( DictReader.reverse( s ) );
-      } );
-      allWords = ( ( ModifiableDAWGSet )allWords ).compress();
-      inverseWords = ( ( ModifiableDAWGSet )inverseWords ).compress();
-      suffixParadigms = new PatriciaTrie<>();
-      Map< String, int[] > syncParadigms = Collections.synchronizedMap( suffixParadigms );
-      for ( int prefixLength = 1; prefixLength <= 5; prefixLength++ ) {
-        final int prefixLen = prefixLength;
-        List< String > prefixes = inverseWords
+        .sorted()
+        .collect( Collectors.toList() );
+      logger.log( Level.FINE, "suffixParadigms pre: {0}", prefixLength );
+      prefixes
+        .stream()
+        .parallel()
+        .forEach( prefix -> {
+        NavigableSet< String > prefixSet = inverseWords.prefixSet( prefix );
+        int cnt = prefixSet.size();
+        int paradigms[] = prefixSet
           .stream()
-          .filter( s -> s.length() > prefixLen )
-          .map( s -> s.substring( 0, prefixLen ) )
+          .map( s -> Utils.reverse( s ) )
+          .flatMap( s -> allWords.get( s ).stream() )
+          .map( Integer::parseInt )
+          .filter( p -> productiveParadigms.contains( p ) )
           .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
           .entrySet()
           .stream()
-          .filter( e -> e.getValue() > 1L )
-          .map( e -> e.getKey() )
-          .sorted()
-          .collect( Collectors.toList() );
-        System.out.println( prefixLen + ": " + prefixes.size() );
-        prefixes
-          .stream()
-          .parallel()
-          .forEach( prefix -> {
-          NavigableSet< String > prefixSet = inverseWords.prefixSet( prefix );
-          int cnt = prefixSet.size();
-          int paradigms[] = prefixSet
-            .stream()
-            .map( s -> DictReader.reverse( s ) )
-            .flatMap( s -> getLemmas( s ).stream() )
-            .filter( l -> l.isMorphable() )
-            .map( l -> l.paradigmIdx )
-            .filter( p -> productiveParadigms.contains( p ) )
-            .collect( Collectors.groupingBy( Function.identity(), Collectors.counting() ) )
-            .entrySet()
-            .stream()
-            .filter( e -> e.getValue() > cnt / 2 )
-            .mapToInt( e -> e.getKey() )
-            .toArray();
-          if ( paradigms.length > 0 )
-            syncParadigms.put( prefix, paradigms );
-          System.out.println( prefix + " / " + cnt );
-        } );
-      }
+          .filter( e -> e.getValue() > cnt / 2 )
+          .mapToInt( e -> e.getKey() )
+          .toArray();
+        if ( paradigms.length > 0 )
+          syncParadigms.put( prefix, paradigms );
+      } );
+      logger.log( Level.FINE, "suffixParadigms post: {0}", prefixLength );
     }
+  }
+  
+  public List< WordForm > getWordForms( String word ) {
+    return getLemmas( word ).stream().flatMap( lemma -> lemma.getWordForms( word ).stream() ).collect( Collectors.toList() );
   }
   
   public List< CompressedLemma > getLemmas( String word ) {
@@ -256,7 +260,7 @@ public class Dictionary implements Serializable {
   
   private List< CompressedLemma > getLemmas( String word, boolean cutPrefixes ) {
     List< CompressedLemma > ret = new ArrayList<>();
-    for ( int l = word.length(); l >= 1; l-- ) {
+    for ( int l = word.length(); l >= 0; l-- ) {
       String w = word.substring( 0, l );
       Set< String > paradigms = words.get( w );
       for ( String paradigm : paradigms ) {
@@ -274,8 +278,8 @@ public class Dictionary implements Serializable {
       if ( PREFIXES.contains( w ) ) {
         List< CompressedLemma > ls = getLemmas( word.substring( l ) );
         for ( CompressedLemma lemma : ls )
-          if ( lemma.isMorphable() )
-            ret.add( new CompressedLemma( -1, w + lemma.name, lemma.paradigmIdx, allParadigms ) );
+          if ( lemma.isMorphablePOS() )
+            ret.add( new CompressedLemma( -1, w + lemma.name, lemma.paradigmIdx, this ) );
       }
     }
     if ( !ret.isEmpty() )
@@ -285,12 +289,12 @@ public class Dictionary implements Serializable {
         String prefix = word.substring( 0, l );
         List< CompressedLemma > ls = getLemmas( word.substring( l ), false );
         for ( CompressedLemma lemma : ls )
-          if ( lemma.isMorphable() )
-            ret.add( new CompressedLemma( -1, prefix + lemma.name, lemma.paradigmIdx, allParadigms ) );
+          if ( lemma.isMorphablePOS() )
+            ret.add( new CompressedLemma( -1, prefix + lemma.name, lemma.paradigmIdx, this ) );
       }
       if ( !ret.isEmpty() )
         return ret;
-      String reverse = DictReader.reverse( word );
+      String reverse = Utils.reverse( word );
       for ( int i = 5; i >= 1; i-- ) {
         String w = reverse.substring( 0, i );
         int paradigms[] = suffixParadigms.get( w );
@@ -298,7 +302,7 @@ public class Dictionary implements Serializable {
           for ( int paradigmId : paradigms ) {
             SuffixParadigm paradigm = allParadigms.get( paradigmId );
             if ( paradigm.shift <= i )
-              ret.add( new CompressedLemma( -1, word.substring( 0, word.length() - paradigm.shift ), paradigmId, allParadigms ) );
+              ret.add( new CompressedLemma( -1, word.substring( 0, word.length() - paradigm.shift ), paradigmId, this ) );
           }
           if ( !ret.isEmpty() )
             return ret;
@@ -309,16 +313,15 @@ public class Dictionary implements Serializable {
   }
   
   public static void main( String... args ) throws Exception {
-    Dictionary dictionary;
-    try {
-      dictionary = DictReader.readCached();
-    } catch ( IOException | ClassNotFoundException e ) {
-      dictionary = DictReader.readFromXml();
-      DictReader.writeCached( dictionary );
-    }
+    ConsoleHandler handler = new ConsoleHandler();
+    handler.setLevel( Level.ALL );
+    logger.addHandler( handler );
+    logger.setLevel( Level.ALL );
+    Dictionary dictionary = DictionaryReader.read();
     for ( CompressedLemma lemma : dictionary.getLemmas( "котики" ) ) {
       System.out.println( lemma );
       System.out.println( lemma.getSuffixParadigm().grammemes );
+      System.out.println( lemma.getWordWithGrammemes( "GENT", "SING" ) );
     }
     System.out.println();
     for ( CompressedLemma lemma : dictionary.getLemmas( "протокотики" ) ) {
@@ -340,5 +343,8 @@ public class Dictionary implements Serializable {
       System.out.println( lemma );
       System.out.println( lemma.getSuffixParadigm().grammemes );
     }
+    System.out.println();
+    for ( WordForm wordForm : dictionary.getWordForms( "прокотики" ) )
+      System.out.println( wordForm );
   }
 }

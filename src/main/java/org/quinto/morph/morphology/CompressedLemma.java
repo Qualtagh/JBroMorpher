@@ -2,37 +2,24 @@ package org.quinto.morph.morphology;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CompressedLemma implements Serializable {
-  private static final long serialVersionUID = 1L;
-  private static final Set< Grammeme > MORPHABLE = new HashSet<>( Arrays.asList(
-    new Grammeme( "NOUN" ),
-    new Grammeme( "ADJF" ),
-    new Grammeme( "ADJS" ),
-    new Grammeme( "COMP" ),
-    new Grammeme( "VERB" ),
-    new Grammeme( "INFN" ),
-    new Grammeme( "PRTF" ),
-    new Grammeme( "PRTS" ),
-    new Grammeme( "GRND" ),
-    new Grammeme( "ADVB" )
-  ) );
+  private static final long serialVersionUID = 3L;
   public int id;
   public String name;
   public int paradigmIdx;
-  public List< SuffixParadigm > paradigms;
+  public Dictionary dictionary;
   
-  public CompressedLemma( int id, String name, int paradigmIdx, List< SuffixParadigm > paradigms ) {
+  public CompressedLemma( int id, String name, int paradigmIdx, Dictionary dictionary ) {
     this.id = id;
     this.name = name;
     this.paradigmIdx = paradigmIdx;
-    this.paradigms = paradigms;
+    this.dictionary = dictionary;
   }
   
   public Lemma getLemma() {
@@ -52,14 +39,14 @@ public class CompressedLemma implements Serializable {
   }
   
   public SuffixParadigm getSuffixParadigm() {
-    return paradigms.get( paradigmIdx );
+    return dictionary.allParadigms.get( paradigmIdx );
   }
   
   public boolean canProduce( String word ) {
-    return !getWordForms( word ).isEmpty();
+    return !getSuitableGrammemeSets( word ).isEmpty();
   }
   
-  public List< Set< Grammeme > > getWordForms( String word ) {
+  public List< Set< Grammeme > > getSuitableGrammemeSets( String word ) {
     if ( !word.startsWith( name ) )
       return Collections.EMPTY_LIST;
     word = word.substring( name.length() );
@@ -70,10 +57,61 @@ public class CompressedLemma implements Serializable {
         ret.add( e.getKey() );
     return ret;
   }
+  
+  public List< WordForm > getWordForms( String word ) {
+    return getSuitableGrammemeSets( word ).stream().map( gs -> new WordForm( this, gs ) ).collect( Collectors.toList() );
+  }
 
-  public boolean isMorphable() {
-    for ( Grammeme grammeme : getSuffixParadigm().grammemes )
-      if ( MORPHABLE.contains( grammeme ) )
+  public boolean isMorphablePOS() {
+    return getSuffixParadigm().isMorphablePOS();
+  }
+
+  public String getWordWithGrammemes( Iterable< ? > grammemes ) {
+    Set< Grammeme > gs = Grammeme.toSet( grammemes );
+    SuffixParadigm paradigm = getSuffixParadigm();
+    return name + paradigm.forms.get( gs );
+  }
+
+  public String getWordWithGrammemes( Grammeme... grammemes ) {
+    return getWordWithGrammemes( Grammeme.toSet( grammemes ) );
+  }
+
+  public String getWordWithGrammemes( String... grammemes ) {
+    return getWordWithGrammemes( Grammeme.toSet( grammemes ) );
+  }
+
+  public List< WordForm > getWordFormsWithGrammemes( Quantifier quantifier, Iterable< ? > grammemes ) {
+    Set< Grammeme > gs = Grammeme.toSet( grammemes );
+    SuffixParadigm paradigm = getSuffixParadigm();
+    return paradigm
+      .forms
+      .keySet()
+      .stream()
+      .filter( g -> quantifier == Quantifier.EVERY ? g.containsAll( gs ) :
+                    quantifier == Quantifier.ANY ? g.stream().anyMatch( gs::contains ) :
+                    g.equals( gs ) )
+      .map( g -> new WordForm( this, g ) )
+      .collect( Collectors.toList() );
+  }
+
+  public List< WordForm > getWordFormsWithGrammemes( Quantifier quantifier, Grammeme... grammemes ) {
+    return getWordFormsWithGrammemes( quantifier, Grammeme.toSet( grammemes ) );
+  }
+
+  public List< WordForm > getWordFormsWithGrammemes( Quantifier quantifier, String... grammemes ) {
+    return getWordFormsWithGrammemes( quantifier, Grammeme.toSet( grammemes ) );
+  }
+  
+  public boolean hasGrammeme( String grammeme ) {
+    return hasGrammeme( new Grammeme( grammeme ) );
+  }
+  
+  public boolean hasGrammeme( Grammeme grammeme ) {
+    SuffixParadigm suffixParadigm = getSuffixParadigm();
+    if ( suffixParadigm.grammemes.contains( grammeme ) )
+      return true;
+    for ( Set< Grammeme > set : suffixParadigm.forms.keySet() )
+      if ( set.contains( grammeme ) )
         return true;
     return false;
   }
