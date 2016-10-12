@@ -24,6 +24,8 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import org.apache.commons.collections4.ListValuedMap;
+import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
@@ -125,13 +127,14 @@ public class DictionaryReader {
       String formName = null;
       Set< Grammeme > grammemesSet = null;
       Map< SuffixParadigm, Integer > paradigms = new LinkedHashMap<>();
+      ListValuedMap< String, Grammeme > grammemeParents = new ArrayListValuedHashMap<>();
       while ( reader.hasNext() ) {
         switch ( reader.getEventType() ) {
           case XMLStreamConstants.START_ELEMENT:
             QName name = reader.getName();
             String tag = name.getLocalPart();
             hierarchy.add( tag );
-            String section = hierarchy.size() > 2 ? hierarchy.get( 1 ) : "";
+            String section = hierarchy.size() > 1 ? hierarchy.get( 1 ) : "";
             switch ( section ) {
               case "grammemes":
                 Grammeme grammeme;
@@ -139,7 +142,8 @@ public class DictionaryReader {
                   case "grammeme":
                     current = grammeme = new Grammeme();
                     String parent = reader.getAttributeValue( "", "parent" );
-                    grammeme.parent = dictionary.grammemes.get( "ANim".equals( parent ) ? "ANIMG" : parent.toUpperCase() );
+                    if ( parent != null && !parent.isEmpty() )
+                      grammemeParents.put( "ANim".equals( parent ) ? "ANIMG" : parent.toUpperCase(), grammeme );
                     break;
                 }
                 break;
@@ -174,7 +178,7 @@ public class DictionaryReader {
             }
             break;
           case XMLStreamConstants.END_ELEMENT:
-            section = hierarchy.size() > 2 ? hierarchy.get( 1 ) : "";
+            section = hierarchy.size() > 1 ? hierarchy.get( 1 ) : "";
             tag = hierarchy.remove( hierarchy.size() - 1 );
             switch ( section ) {
               case "lemmata":
@@ -195,10 +199,20 @@ public class DictionaryReader {
                     break;
                 }
                 break;
+              case "grammemes":
+                switch ( tag ) {
+                  case "grammemes":
+                    for ( Map.Entry< String, Grammeme > e : grammemeParents.entries() )
+                      e.getValue().parent = dictionary.grammemes.get( e.getKey() );
+                    break;
+                }
+                break;
             }
+            if ( section.equals( tag ) )
+              current = null;
             break;
           case XMLStreamConstants.CHARACTERS:
-            section = hierarchy.size() > 2 ? hierarchy.get( 1 ) : "";
+            section = hierarchy.size() > 1 ? hierarchy.get( 1 ) : "";
             tag = hierarchy.get( hierarchy.size() - 1 );
             String value = reader.getText();
             switch ( section ) {

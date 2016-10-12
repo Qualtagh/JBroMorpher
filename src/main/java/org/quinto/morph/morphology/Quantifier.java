@@ -1,7 +1,7 @@
 package org.quinto.morph.morphology;
 
 public enum Quantifier {
-  EVERY,
-  EXACTLY,
-  ANY
+  CONTAINS_EVERY,
+  MATCHES_EXACTLY,
+  CONTAINS_ANY
 }

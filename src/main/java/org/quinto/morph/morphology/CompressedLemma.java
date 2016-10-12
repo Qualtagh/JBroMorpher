@@ -3,6 +3,8 @@ package org.quinto.morph.morphology;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,8 +89,8 @@ public class CompressedLemma implements Serializable {
       .forms
       .keySet()
       .stream()
-      .filter( g -> quantifier == Quantifier.EVERY ? g.containsAll( gs ) :
-                    quantifier == Quantifier.ANY ? g.stream().anyMatch( gs::contains ) :
+      .filter( g -> quantifier == Quantifier.CONTAINS_EVERY ? g.containsAll( gs ) :
+                    quantifier == Quantifier.CONTAINS_ANY ? g.stream().anyMatch( gs::contains ) :
                     g.equals( gs ) )
       .map( g -> new WordForm( this, g ) )
       .collect( Collectors.toList() );

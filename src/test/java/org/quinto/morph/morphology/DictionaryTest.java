@@ -30,8 +30,8 @@ public class DictionaryTest {
       Assert.assertEquals( "котика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
       Assert.assertEquals( "котика", lemma.getWordWithGrammemes( Arrays.asList( "GENT", "SING" ) ) );
       Assert.assertEquals( "котика", lemma.getWordWithGrammemes( new HashSet<>( Arrays.asList( "GENT", "SING" ) ) ) );
-      Assert.assertEquals( 2, lemma.getWordFormsWithGrammemes( Quantifier.EVERY, "GENT" ).size() );
-      Assert.assertEquals( 6, lemma.getWordFormsWithGrammemes( Quantifier.EVERY, "SING" ).size() );
+      Assert.assertEquals( 2, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).size() );
+      Assert.assertEquals( 6, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "SING" ).size() );
       List< WordForm > forms = lemma.getWordForms( "котик" );
       for ( WordForm form : forms ) {
         Assert.assertEquals( "котик", form.getWord() );
@@ -169,8 +169,11 @@ public class DictionaryTest {
           System.out.println( form );
           Assert.assertEquals( "мегакрасный", form.getWord() );
           System.out.println( "123" );
+          System.out.println( form.getWordWithGrammemes( "GENT" ) );
+          System.out.println( form.getWordFormWithGrammemes( "GENT" ) );
           //Assert.assertEquals( "мегакрасного", form.getWordWithGrammemes( "GENT" ) );
         }
+        lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).stream().forEach( System.out::println );
       }
     }
     Assert.assertEquals( 1, size );

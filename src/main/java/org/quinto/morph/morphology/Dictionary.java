@@ -22,7 +22,7 @@ import org.quinto.dawg.ModifiableDAWGSet;
 import org.quinto.dawg.ModifiableDAWGSetValuedMap;
 
 public class Dictionary implements Serializable {
-  private static final long serialVersionUID = 23L;
+  private static final long serialVersionUID = 30L;
   private static final Logger logger = Logger.getLogger( Dictionary.class.getName() );
   public Map< String, Grammeme > grammemes = new LinkedHashMap<>();
   public Map< Integer, CompressedLemma > lemmas = new LinkedHashMap<>();
