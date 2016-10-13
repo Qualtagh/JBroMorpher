@@ -1,8 +1,10 @@
 package org.quinto.morph.morphology;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,6 +14,7 @@ public class Grammeme implements Serializable {
   public String name;
   public String alias;
   public String description;
+  private transient List< Grammeme > parents;
 
   public Grammeme() {
   }
@@ -58,5 +61,16 @@ public class Grammeme implements Serializable {
     while ( ret.parent != null )
       ret = ret.parent;
     return ret;
+  }
+  
+  public List< Grammeme > getAllParents() {
+    if ( parents == null ) {
+      parents = new ArrayList<>();
+      Grammeme g = this;
+      parents.add( g );
+      while ( g.parent != null )
+        parents.add( g = g.parent );
+    }
+    return parents;
   }
 }

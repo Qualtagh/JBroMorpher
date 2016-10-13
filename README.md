@@ -10,7 +10,7 @@ Uses [OpenCorpora](http://opencorpora.org/) dictionary.
 Requires [DAWG](https://github.com/Qualtagh/DAWG) library.
 
 First launch takes a long time (about 5 minutes with `-server` option on) to download and parse a dictionary and prepare a cached version.
-Loading a cached version takes about 5 seconds. Dictionary file name resolving order:
+Loading a cached version takes about 10 seconds. Dictionary file name resolving order:
 
 - A local file `dict.opcorpora.xml` located in current directory
 - `dict.opcorpora.xml.bz2`

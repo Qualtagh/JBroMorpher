@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -310,41 +309,5 @@ public class Dictionary implements Serializable {
       }
     }
     return ret;
-  }
-  
-  public static void main( String... args ) throws Exception {
-    ConsoleHandler handler = new ConsoleHandler();
-    handler.setLevel( Level.ALL );
-    logger.addHandler( handler );
-    logger.setLevel( Level.ALL );
-    Dictionary dictionary = DictionaryReader.read();
-    for ( CompressedLemma lemma : dictionary.getLemmas( "котики" ) ) {
-      System.out.println( lemma );
-      System.out.println( lemma.getSuffixParadigm().grammemes );
-      System.out.println( lemma.getWordWithGrammemes( "GENT", "SING" ) );
-    }
-    System.out.println();
-    for ( CompressedLemma lemma : dictionary.getLemmas( "протокотики" ) ) {
-      System.out.println( lemma );
-      System.out.println( lemma.getSuffixParadigm().grammemes );
-    }
-    System.out.println();
-    for ( CompressedLemma lemma : dictionary.getLemmas( "прокотики" ) ) {
-      System.out.println( lemma );
-      System.out.println( lemma.getSuffixParadigm().grammemes );
-    }
-    System.out.println();
-    for ( CompressedLemma lemma : dictionary.getLemmas( "тошки" ) ) {
-      System.out.println( lemma );
-      System.out.println( lemma.getSuffixParadigm().grammemes );
-    }
-    System.out.println();
-    for ( CompressedLemma lemma : dictionary.getLemmas( "бошки" ) ) {
-      System.out.println( lemma );
-      System.out.println( lemma.getSuffixParadigm().grammemes );
-    }
-    System.out.println();
-    for ( WordForm wordForm : dictionary.getWordForms( "прокотики" ) )
-      System.out.println( wordForm );
   }
 }

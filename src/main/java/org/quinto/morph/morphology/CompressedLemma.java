@@ -3,8 +3,6 @@ package org.quinto.morph.morphology;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,11 +108,9 @@ public class CompressedLemma implements Serializable {
   
   public boolean hasGrammeme( Grammeme grammeme ) {
     SuffixParadigm suffixParadigm = getSuffixParadigm();
-    if ( suffixParadigm.grammemes.contains( grammeme ) )
-      return true;
-    for ( Set< Grammeme > set : suffixParadigm.forms.keySet() )
-      if ( set.contains( grammeme ) )
-        return true;
-    return false;
+    return suffixParadigm.grammemes.contains( grammeme ) ||
+      suffixParadigm.forms.keySet().stream().anyMatch( set -> set.contains( grammeme ) ) ||
+      suffixParadigm.grammemes.stream().anyMatch( g -> g.getAllParents().contains( grammeme ) ) ||
+      suffixParadigm.forms.keySet().stream().anyMatch( set -> set.stream().anyMatch( g -> g.getAllParents().contains( grammeme ) ) );
   }
 }

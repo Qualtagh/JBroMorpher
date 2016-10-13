@@ -5,8 +5,14 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
-import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -15,27 +21,32 @@ public class DictionaryTest {
   
   @BeforeClass
   public static void setUpClass() throws IOException, XMLStreamException, ParseException {
+    ConsoleHandler handler = new ConsoleHandler();
+    handler.setLevel( Level.ALL );
+    Logger logger = Logger.getLogger( Dictionary.class.getName() );
+    logger.addHandler( handler );
+    logger.setLevel( Level.ALL );
     dictionary = DictionaryReader.read();
   }
 
   @Test
   public void dictionary() {
     List< CompressedLemma > lemmas = dictionary.getLemmas( "котики" );
-    Assert.assertEquals( 2, lemmas.size() );
+    assertEquals( 2, lemmas.size() );
     for ( CompressedLemma lemma : lemmas ) {
-      Assert.assertEquals( "котик", lemma.name );
-      Assert.assertEquals( "котика", lemma.getWordWithGrammemes( new HashSet<>( Arrays.asList( new Grammeme( "GENT" ), new Grammeme( "SING" ) ) ) ) );
-      Assert.assertEquals( "котика", lemma.getWordWithGrammemes( Arrays.asList( new Grammeme( "GENT" ), new Grammeme( "SING" ) ) ) );
-      Assert.assertEquals( "котика", lemma.getWordWithGrammemes( new Grammeme( "GENT" ), new Grammeme( "SING" ) ) );
-      Assert.assertEquals( "котика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
-      Assert.assertEquals( "котика", lemma.getWordWithGrammemes( Arrays.asList( "GENT", "SING" ) ) );
-      Assert.assertEquals( "котика", lemma.getWordWithGrammemes( new HashSet<>( Arrays.asList( "GENT", "SING" ) ) ) );
-      Assert.assertEquals( 2, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).size() );
-      Assert.assertEquals( 6, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "SING" ).size() );
+      assertEquals( "котик", lemma.name );
+      assertEquals( "котика", lemma.getWordWithGrammemes( new HashSet<>( Arrays.asList( new Grammeme( "GENT" ), new Grammeme( "SING" ) ) ) ) );
+      assertEquals( "котика", lemma.getWordWithGrammemes( Arrays.asList( new Grammeme( "GENT" ), new Grammeme( "SING" ) ) ) );
+      assertEquals( "котика", lemma.getWordWithGrammemes( new Grammeme( "GENT" ), new Grammeme( "SING" ) ) );
+      assertEquals( "котика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+      assertEquals( "котика", lemma.getWordWithGrammemes( Arrays.asList( "GENT", "SING" ) ) );
+      assertEquals( "котика", lemma.getWordWithGrammemes( new HashSet<>( Arrays.asList( "GENT", "SING" ) ) ) );
+      assertEquals( 2, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).size() );
+      assertEquals( 6, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "SING" ).size() );
       List< WordForm > forms = lemma.getWordForms( "котик" );
       for ( WordForm form : forms ) {
-        Assert.assertEquals( "котик", form.getWord() );
-        Assert.assertEquals( "котика", form.getWordWithGrammemes( "GENT" ) );
+        assertEquals( "котик", form.getWord() );
+        assertEquals( "котика", form.getWordWithGrammemes( "GENT" ) );
       }
     }
   }
@@ -43,55 +54,55 @@ public class DictionaryTest {
   @Test
   public void knownPrefix() {
     List< CompressedLemma > lemmas = dictionary.getLemmas( "протокотики" );
-    Assert.assertEquals( 2, lemmas.size() );
+    assertEquals( 2, lemmas.size() );
     for ( CompressedLemma lemma : lemmas ) {
-      Assert.assertEquals( "протокотик", lemma.name );
-      Assert.assertEquals( "протокотика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+      assertEquals( "протокотик", lemma.name );
+      assertEquals( "протокотика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
       List< WordForm > forms = lemma.getWordForms( "протокотик" );
       for ( WordForm form : forms ) {
-        Assert.assertEquals( "протокотик", form.getWord() );
-        Assert.assertEquals( "протокотика", form.getWordWithGrammemes( "GENT" ) );
+        assertEquals( "протокотик", form.getWord() );
+        assertEquals( "протокотика", form.getWordWithGrammemes( "GENT" ) );
       }
     }
     List< CompressedLemma > expected = dictionary.getLemmas( "котики" );
     for ( int i = 0; i < expected.size(); i++ )
-      Assert.assertEquals( expected.get( i ).paradigmIdx, lemmas.get( i ).paradigmIdx );
+      assertEquals( expected.get( i ).paradigmIdx, lemmas.get( i ).paradigmIdx );
   }
 
   @Test
   public void unknownPrefix() {
     List< CompressedLemma > lemmas = dictionary.getLemmas( "прокотики" );
-    Assert.assertEquals( 2, lemmas.size() );
+    assertEquals( 2, lemmas.size() );
     for ( CompressedLemma lemma : lemmas ) {
-      Assert.assertEquals( "прокотик", lemma.name );
-      Assert.assertEquals( "прокотика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+      assertEquals( "прокотик", lemma.name );
+      assertEquals( "прокотика", lemma.getWordWithGrammemes( "GENT", "SING" ) );
       List< WordForm > forms = lemma.getWordForms( "прокотик" );
       for ( WordForm form : forms ) {
-        Assert.assertEquals( "прокотик", form.getWord() );
-        Assert.assertEquals( "прокотика", form.getWordWithGrammemes( "GENT" ) );
+        assertEquals( "прокотик", form.getWord() );
+        assertEquals( "прокотика", form.getWordWithGrammemes( "GENT" ) );
       }
     }
     List< CompressedLemma > expected = dictionary.getLemmas( "котики" );
     for ( int i = 0; i < expected.size(); i++ )
-      Assert.assertEquals( expected.get( i ).paradigmIdx, lemmas.get( i ).paradigmIdx );
+      assertEquals( expected.get( i ).paradigmIdx, lemmas.get( i ).paradigmIdx );
   }
 
   @Test
   public void knownSuffix() {
     List< CompressedLemma > lemmas = dictionary.getLemmas( "тошки" );
-    Assert.assertEquals( 1, lemmas.size() );
+    assertEquals( 1, lemmas.size() );
     for ( CompressedLemma lemma : lemmas ) {
-      Assert.assertEquals( "тош", lemma.name );
-      Assert.assertEquals( "тошки", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+      assertEquals( "тош", lemma.name );
+      assertEquals( "тошки", lemma.getWordWithGrammemes( "GENT", "SING" ) );
       List< WordForm > forms = lemma.getWordForms( "тошка" );
       for ( WordForm form : forms ) {
-        Assert.assertEquals( "тошка", form.getWord() );
-        Assert.assertEquals( "тошки", form.getWordWithGrammemes( "GENT" ) );
+        assertEquals( "тошка", form.getWord() );
+        assertEquals( "тошки", form.getWordWithGrammemes( "GENT" ) );
       }
     }
     List< CompressedLemma > expected = dictionary.getLemmas( "бошки" );
     for ( int i = 0; i < expected.size(); i++ )
-      Assert.assertEquals( expected.get( i ).paradigmIdx, lemmas.get( i ).paradigmIdx );
+      assertEquals( expected.get( i ).paradigmIdx, lemmas.get( i ).paradigmIdx );
   }
 
   @Test
@@ -100,17 +111,17 @@ public class DictionaryTest {
     int size = 0;
     for ( CompressedLemma lemma : lemmas ) {
       if ( lemma.canProduce( "ёж" ) ) {
-        Assert.assertEquals( "", lemma.name );
-        Assert.assertEquals( "ежа", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+        assertEquals( "", lemma.name );
+        assertEquals( "ежа", lemma.getWordWithGrammemes( "GENT", "SING" ) );
         size++;
         List< WordForm > forms = lemma.getWordForms( "ёж" );
         for ( WordForm form : forms ) {
-          Assert.assertEquals( "ёж", form.getWord() );
-          Assert.assertEquals( "ежа", form.getWordWithGrammemes( "GENT" ) );
+          assertEquals( "ёж", form.getWord() );
+          assertEquals( "ежа", form.getWordWithGrammemes( "GENT" ) );
         }
       }
     }
-    Assert.assertEquals( 2, size );
+    assertEquals( 2, size );
   }
 
   @Test
@@ -119,19 +130,19 @@ public class DictionaryTest {
     int size = 0;
     for ( CompressedLemma lemma : lemmas ) {
       if ( lemma.canProduce( "человек" ) ) {
-        Assert.assertEquals( "", lemma.name );
-        Assert.assertEquals( "человека", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+        assertEquals( "", lemma.name );
+        assertEquals( "человека", lemma.getWordWithGrammemes( "GENT", "SING" ) );
         size++;
         List< WordForm > forms = lemma.getWordForms( "человек" );
         for ( WordForm form : forms ) {
           if ( !form.hasGrammeme( "SING" ) )
             continue;
-          Assert.assertEquals( "человек", form.getWord() );
-          Assert.assertEquals( "человека", form.getWordWithGrammemes( "GENT" ) );
+          assertEquals( "человек", form.getWord() );
+          assertEquals( "человека", form.getWordWithGrammemes( "GENT" ) );
         }
       }
     }
-    Assert.assertEquals( 1, size );
+    assertEquals( 1, size );
   }
 
   @Test
@@ -140,19 +151,19 @@ public class DictionaryTest {
     int size = 0;
     for ( CompressedLemma lemma : lemmas ) {
       if ( lemma.canProduce( "суперчеловек" ) ) {
-        Assert.assertEquals( "супер", lemma.name );
-        Assert.assertEquals( "суперчеловека", lemma.getWordWithGrammemes( "GENT", "SING" ) );
+        assertEquals( "супер", lemma.name );
+        assertEquals( "суперчеловека", lemma.getWordWithGrammemes( "GENT", "SING" ) );
         size++;
         List< WordForm > forms = lemma.getWordForms( "суперчеловек" );
         for ( WordForm form : forms ) {
           if ( !form.hasGrammeme( "SING" ) )
             continue;
-          Assert.assertEquals( "суперчеловек", form.getWord() );
-          Assert.assertEquals( "суперчеловека", form.getWordWithGrammemes( "GENT" ) );
+          assertEquals( "суперчеловек", form.getWord() );
+          assertEquals( "суперчеловека", form.getWordWithGrammemes( "GENT" ) );
         }
       }
     }
-    Assert.assertEquals( 1, size );
+    assertEquals( 1, size );
   }
 
   @Test
@@ -161,21 +172,56 @@ public class DictionaryTest {
     int size = 0;
     for ( CompressedLemma lemma : lemmas ) {
       if ( lemma.hasGrammeme( "ADJF" ) ) {
-        Assert.assertEquals( "мегакрасн", lemma.name );
-        Assert.assertEquals( "мегакрасной", lemma.getWordWithGrammemes( "GENT", "SING", "FEMN" ) );
+        assertTrue( lemma.hasGrammeme( "ANIMG" ) );
+        assertTrue( lemma.hasGrammeme( "POST" ) );
+        assertFalse( lemma.hasGrammeme( "TENS" ) );
+        assertEquals( "мегакрасн", lemma.name );
+        assertEquals( "мегакрасной", lemma.getWordWithGrammemes( "GENT", "SING", "FEMN" ) );
         size++;
         List< WordForm > forms = lemma.getWordForms( "мегакрасный" );
         for ( WordForm form : forms ) {
-          System.out.println( form );
-          Assert.assertEquals( "мегакрасный", form.getWord() );
-          System.out.println( "123" );
-          System.out.println( form.getWordWithGrammemes( "GENT" ) );
-          System.out.println( form.getWordFormWithGrammemes( "GENT" ) );
-          //Assert.assertEquals( "мегакрасного", form.getWordWithGrammemes( "GENT" ) );
+          assertEquals( "мегакрасный", form.getWord() );
+          assertEquals( 1, form.getWordsWithGrammemes( "GENT" ).size() );
+          assertEquals( "мегакрасного", form.getWordWithGrammemes( "GENT" ) );
+          assertFalse( form.getWordFormWithGrammemes( "GENT" ).hasGrammeme( "ANIMG" ) );
+          if ( form.hasGrammeme( "ACCS" ) ) {
+            assertTrue( form.hasGrammeme( "ANIMG" ) );
+            assertEquals( 1, form.getWordFormsWithGrammemes( "ACCS" ).size() );
+            assertEquals( "мегакрасный", form.getWordWithGrammemes( "ACCS" ) );
+          } else {
+            assertFalse( form.hasGrammeme( "ANIMG" ) );
+            assertEquals( 2, form.getWordFormsWithGrammemes( "ACCS" ).size() );
+            assertEquals( new HashSet<>( Arrays.asList( "мегакрасный", "мегакрасного" ) ), new HashSet<>( form.getWordsWithGrammemes( "ACCS" ) ) );
+          }
         }
-        lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).stream().forEach( System.out::println );
+        assertEquals( 4, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).size() );
+        assertEquals( new HashSet<>( Arrays.asList( "мегакрасного", "мегакрасной", "мегакрасных" ) ),
+          lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "GENT" ).stream().map( f -> f.getWord() ).collect( Collectors.toSet() ) );
+        assertEquals( 6, lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "ACCS" ).size() );
+        assertEquals( new HashSet<>( Arrays.asList( "мегакрасного", "мегакрасный", "мегакрасную", "мегакрасное", "мегакрасных", "мегакрасные" ) ),
+          lemma.getWordFormsWithGrammemes( Quantifier.CONTAINS_EVERY, "ACCS" ).stream().map( f -> f.getWord() ).collect( Collectors.toSet() ) );
       }
     }
-    Assert.assertEquals( 1, size );
+    assertEquals( 1, size );
+  }
+
+  @Test
+  public void unknownPrefixVerb() {
+    for ( WordForm form : dictionary.getWordForms( "броварю" ) ) {
+      if ( !form.hasGrammeme( "VERB" ) )
+        continue;
+      assertTrue( form.hasGrammeme( "SING" ) );
+      assertTrue( form.hasGrammeme( "PRES" ) );
+      assertTrue( form.hasGrammeme( "1PER" ) );
+      assertEquals( "броварим", form.getWordWithGrammemes( "PLUR" ) );
+      assertEquals( "броварите", form.getWordWithGrammemes( "PLUR", "2PER" ) );
+      assertEquals( "броварил", form.getWordWithGrammemes( "PAST" ) );
+      assertEquals( "броварили", form.getWordWithGrammemes( "PLUR", "PAST" ) );
+      assertEquals( "броваришь", form.getWordWithGrammemes( "2PER" ) );
+      assertFalse( form.getWordFormWithGrammemes( "PAST" ).hasGrammeme( "PERS" ) );
+      assertEquals( null, form.getWordWithGrammemes( "PAST", "2PER" ) );
+      assertEquals( "броварила", form.getWordWithGrammemes( "PAST", "FEMN" ) );
+      assertEquals( "броварил", form.getWordWithGrammemes( "PAST", "MASC" ) );
+    }
   }
 }

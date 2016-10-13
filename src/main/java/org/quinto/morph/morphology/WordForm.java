@@ -154,6 +154,9 @@ public class WordForm implements Serializable {
   }
 
   public boolean hasGrammeme( Grammeme grammeme ) {
-    return form.contains( grammeme ) || lemma.getSuffixParadigm().grammemes.contains( grammeme );
+    return form.contains( grammeme ) ||
+      lemma.getSuffixParadigm().grammemes.contains( grammeme ) ||
+      form.stream().anyMatch( g -> g.getAllParents().contains( grammeme ) ) ||
+      lemma.getSuffixParadigm().grammemes.stream().anyMatch( g -> g.getAllParents().contains( grammeme ) );
   }
 }
