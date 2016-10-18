@@ -224,4 +224,13 @@ public class DictionaryTest {
       assertEquals( "броварил", form.getWordWithGrammemes( "PAST", "MASC" ) );
     }
   }
+
+  @Test
+  public void knownSuffixVerb() {
+    for ( WordForm form : dictionary.getWordForms( "крокожу" ) ) {
+      if ( !form.hasGrammeme( "VERB" ) )
+        continue;
+      assertEquals( "крокодил", form.getWordWithGrammemes( "PAST" ) );
+    }
+  }
 }
