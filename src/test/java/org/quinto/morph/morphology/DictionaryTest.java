@@ -1,7 +1,6 @@
 package org.quinto.morph.morphology;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +14,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.quinto.morph.syntaxengine.ParseException;
 
 public class DictionaryTest {
   private static Dictionary dictionary;

@@ -19,6 +19,9 @@ import org.quinto.dawg.DAWGSet;
 import org.quinto.dawg.DAWGSetValuedMap;
 import org.quinto.dawg.ModifiableDAWGSet;
 import org.quinto.dawg.ModifiableDAWGSetValuedMap;
+import org.quinto.morph.syntaxengine.TreeNode;
+import org.quinto.morph.syntaxengine.util.Sequence;
+import org.quinto.morph.syntaxengine.util.Variants;
 
 public class Dictionary implements Serializable {
   private static final long serialVersionUID = 30L;
@@ -247,6 +250,10 @@ public class Dictionary implements Serializable {
       } );
       logger.log( Level.FINE, "suffixParadigms post: {0}", prefixLength );
     }
+  }
+  
+  public Sequence< Variants< TreeNode > > getWordFormsSequence( List< String > sentence ) {
+    return sentence.stream().map( word -> getWordForms( word ).stream().map( form -> form.toTreeNode() ).collect( Collectors.toCollection( Variants::new ) ) ).collect( Collectors.toCollection( Sequence::new ) );
   }
   
   public List< WordForm > getWordForms( String word ) {

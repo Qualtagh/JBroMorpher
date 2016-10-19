@@ -2,6 +2,7 @@ package org.quinto.morph.morphology;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -10,6 +11,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
+import org.quinto.morph.syntaxengine.TreeNode;
 
 public class WordForm implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -158,5 +161,16 @@ public class WordForm implements Serializable {
       lemma.getSuffixParadigm().grammemes.contains( grammeme ) ||
       form.stream().anyMatch( g -> g.getAllParents().contains( grammeme ) ) ||
       lemma.getSuffixParadigm().grammemes.stream().anyMatch( g -> g.getAllParents().contains( grammeme ) );
+  }
+  
+  public TreeNode toTreeNode() {
+    TreeNode ret = new TreeNode( this );
+    ret.withTag( "word", getWord() );
+    ret.withTag( "lemma", lemma.name );
+    ret.withTag( "lemmaId", String.valueOf( lemma.id ) );
+    ret.withTag( "paradigmId", String.valueOf( lemma.paradigmIdx ) );
+    getGrammemesSet().stream().flatMap( g -> g.getAllParents().stream() ).filter( g -> g.parent != null ).map( g -> Pair.of( g.parent.name, g.name ) ).sorted( Comparator.comparing( p -> p.getKey() ) ).forEach( p -> ret.withTag( p.getKey(), p.getValue() ) );
+    getGrammemesSet().stream().flatMap( g -> g.getAllParents().stream() ).map( g -> g.name ).sorted().forEach( ret::withTag );
+    return ret;
   }
 }

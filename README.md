@@ -7,7 +7,7 @@ Inspired by [pymorphy2](https://github.com/kmike/pymorphy2).
 
 Uses [OpenCorpora](http://opencorpora.org/) dictionary.
 
-Requires [DAWG](https://github.com/Qualtagh/DAWG) library.
+Requires [DAWG](https://github.com/Qualtagh/DAWG) and [Syntax Engine](https://github.com/Qualtagh/SyntaxEngine) libraries.
 
 First launch takes a long time (about 5 minutes with `-server` option on) to download and parse a dictionary and prepare a cached version.
 Loading a cached version takes about 10 seconds. Dictionary file name resolving order:

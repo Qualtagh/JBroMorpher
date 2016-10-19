@@ -10,7 +10,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -32,6 +31,7 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.quinto.morph.syntaxengine.ParseException;
 
 public class DictionaryReader {
   public static void writeCached( Dictionary dictionary ) throws IOException {
@@ -222,7 +222,7 @@ public class DictionaryReader {
                   case "name":
                     grammeme.name = "ANim".equals( value ) ? "ANIMG" : value.toUpperCase();
                     if ( dictionary.grammemes.put( grammeme.name, grammeme ) != null )
-                      throw new ParseException( "Duplicate gemmeme found: " + grammeme.name, 0 );
+                      throw new ParseException( "Duplicate gemmeme found: " + grammeme.name );
                     break;
                   case "alias":
                     grammeme.alias = value;
