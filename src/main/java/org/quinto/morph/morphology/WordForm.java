@@ -165,12 +165,12 @@ public class WordForm implements Serializable {
   
   public TreeNode toTreeNode() {
     TreeNode ret = new TreeNode( this );
-    ret.withTag( "word", getWord() );
-    ret.withTag( "lemma", lemma.name );
-    ret.withTag( "lemmaId", String.valueOf( lemma.id ) );
-    ret.withTag( "paradigmId", String.valueOf( lemma.paradigmIdx ) );
-    getGrammemesSet().stream().flatMap( g -> g.getAllParents().stream() ).filter( g -> g.parent != null ).map( g -> Pair.of( g.parent.name, g.name ) ).sorted( Comparator.comparing( p -> p.getKey() ) ).forEach( p -> ret.withTag( p.getKey(), p.getValue() ) );
-    getGrammemesSet().stream().flatMap( g -> g.getAllParents().stream() ).map( g -> g.name ).sorted().forEach( ret::withTag );
+    ret.tags.put( "word", getWord() );
+    ret.tags.put( "lemma", lemma.name );
+    ret.tags.put( "lemmaId", String.valueOf( lemma.id ) );
+    ret.tags.put( "paradigmId", String.valueOf( lemma.paradigmIdx ) );
+    getGrammemesSet().stream().flatMap( g -> g.getAllParents().stream() ).filter( g -> g.parent != null ).map( g -> Pair.of( g.parent.name, g.name ) ).sorted( Comparator.comparing( p -> p.getKey() ) ).forEach( p -> ret.tags.put( p.getKey(), p.getValue() ) );
+    getGrammemesSet().stream().flatMap( g -> g.getAllParents().stream() ).map( g -> g.name ).sorted().forEach( tag -> { if ( !ret.tags.containsKey( tag ) ) ret.tags.put( tag, null ); } );
     return ret;
   }
 }
